@@ -199,6 +199,8 @@ struct aircraft {
     unsigned      nac_p : 4;      // NACp from TSS or opstatus
     unsigned      nac_v : 3;      // NACv from airborne velocity or opstatus
     unsigned      sil : 2;        // SIL from TSS or opstatus
+    unsigned      gva : 2;
+    unsigned      sda : 2;
     sil_type_t    sil_type;       // SIL supplement from TSS or opstatus
 
     int           modeA_hit;   // did our squawk match a possible mode A reply in the last check period?
