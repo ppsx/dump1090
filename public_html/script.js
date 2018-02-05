@@ -875,7 +875,7 @@ function refreshSelected() {
         //         emerg.className = 'hidden';
         // }
 
-        $("#selected_altitude").text(format_altitude_long(selected.altitude, selected.vert_rate, DisplayUnits));
+        $("#selected_altitude").text(format_altitude_long(selected.altitude, selected.baro_rate, DisplayUnits));
 
         if (selected.squawk === null || selected.squawk === '0000') {
                 $('#selected_squawk').text('n/a');
@@ -883,8 +883,8 @@ function refreshSelected() {
                 $('#selected_squawk').text(selected.squawk);
         }
 	
-        $('#selected_speed').text(format_speed_long(selected.speed, DisplayUnits));
-        $('#selected_vertical_rate').text(format_vert_rate_long(selected.vert_rate, DisplayUnits));
+        $('#selected_speed').text(format_speed_long(selected.gs, DisplayUnits));
+        $('#selected_vertical_rate').text(format_vert_rate_long(selected.baro_rate, DisplayUnits));
         $('#selected_icao').text(selected.icao.toUpperCase());
         $('#airframes_post_icao').attr('value',selected.icao);
 	$('#selected_track').text(format_track_long(selected.track));
@@ -936,6 +936,52 @@ function refreshSelected() {
         $('#selected_rssi').text(selected.rssi.toFixed(1) + ' dBFS');
         $('#selected_message_count').text(selected.messages);
         $('#selected_photo_link').html(getFlightAwarePhotoLink(selected.registration));
+
+        $('#selected_alt_geom').text(format_altitude_long(selected.alt_geom, selected.geom_rate, DisplayUnits));
+        $('#selected_mag_heading').text(format_track_long(selected.mag_heading));
+        $('#selected_true_heading').text(format_track_long(selected.true_heading));
+        $('#selected_ias').text(format_speed_long(selected.ias, DisplayUnits));
+        $('#selected_tas').text(format_speed_long(selected.tas, DisplayUnits));
+        if (selected.mach == null) {
+                $('#selected_mach').text('n/a');
+        } else {
+                $('#selected_mach').text(selected.mach.toFixed(3));
+        }
+        if (selected.roll == null) {
+                $('#selected_roll').text('n/a');
+        } else {
+                $('#selected_roll').text(selected.roll.toFixed(1));
+        }
+        if (selected.track_rate == null) {
+                $('#selected_track_rate').text('n/a');
+        } else {
+                $('#selected_track_rate').text(selected.track_rate.toFixed(2));
+        }
+        $('#selected_geom_rate').text(format_vert_rate_long(selected.geom_rate, DisplayUnits));
+        if (selected.alt_setting == null) {
+                $('#selected_alt_setting').text("n/a");
+        } else {
+                $('#selected_alt_setting').text(selected.alt_setting.toFixed(1) + " hPa");
+        }
+        $('#selected_intent_alt').text(format_altitude_long(selected.intent_alt, 0, DisplayUnits));
+        $('#selected_intent_heading').text(format_track_long(selected.intent_heading));
+        if (selected.intent_modes == null) {
+                $('#selected_intent_modes').text("n/a");
+        } else {
+                $('#selected_intent_modes').text(selected.intent_modes.join());
+        }
+
+        if (selected.version == null) {
+                $('#selected_version').text('none');
+        } else if (selected.version == 0) {
+                $('#selected_version').text('v0 (DO-260)');
+        } else if (selected.version == 1) {
+                $('#selected_version').text('v1 (DO-260A)');
+        } else if (selected.version == 2) {
+                $('#selected_version').text('v2 (DO-260B)');
+        } else {
+                $('#selected_version').text('v' + selected.version);
+        }
 }
 
 function refreshHighlighted() {
@@ -967,9 +1013,9 @@ function refreshHighlighted() {
 	}
 
 
-	$('#highlighted_speed').text(format_speed_long(highlighted.speed, DisplayUnits));
+	$('#highlighted_speed').text(format_speed_long(highlighted.gs, DisplayUnits));
 
-	$("#highlighted_altitude").text(format_altitude_long(highlighted.altitude, highlighted.vert_rate, DisplayUnits));
+	$("#highlighted_altitude").text(format_altitude_long(highlighted.altitude, highlighted.baro_rate, DisplayUnits));
 
 	$('#highlighted_icao').text(highlighted.icao.toUpperCase());
 
@@ -1038,9 +1084,9 @@ function refreshTableInfo() {
         tableplane.tr.cells[3].textContent = (tableplane.registration !== null ? tableplane.registration : "");
         tableplane.tr.cells[4].textContent = (tableplane.icaotype !== null ? tableplane.icaotype : "");
         tableplane.tr.cells[5].textContent = (tableplane.squawk !== null ? tableplane.squawk : "");
-        tableplane.tr.cells[6].innerHTML = format_altitude_brief(tableplane.altitude, tableplane.vert_rate, DisplayUnits);
-        tableplane.tr.cells[7].textContent = format_speed_brief(tableplane.speed, DisplayUnits);
-        tableplane.tr.cells[8].textContent = format_vert_rate_brief(tableplane.vert_rate, DisplayUnits);
+        tableplane.tr.cells[6].innerHTML = format_altitude_brief(tableplane.altitude, tableplane.baro_rate, DisplayUnits);
+        tableplane.tr.cells[7].textContent = format_speed_brief(tableplane.gs, DisplayUnits);
+        tableplane.tr.cells[8].textContent = format_vert_rate_brief(tableplane.baro_rate, DisplayUnits);
         tableplane.tr.cells[9].textContent = format_distance_brief(tableplane.sitedist, DisplayUnits);
         tableplane.tr.cells[10].textContent = format_track_brief(tableplane.track);
         tableplane.tr.cells[11].textContent = tableplane.messages;
@@ -1090,8 +1136,8 @@ function sortByRegistration()   { sortBy('registration',    compareAlpha,   func
 function sortByAircraftType()   { sortBy('icaotype',        compareAlpha,   function(x) { return x.icaotype; }); }
 function sortBySquawk()   { sortBy('squawk',  compareAlpha,   function(x) { return x.squawk; }); }
 function sortByAltitude() { sortBy('altitude',compareNumeric, function(x) { return (x.altitude == "ground" ? -1e9 : x.altitude); }); }
-function sortBySpeed()    { sortBy('speed',   compareNumeric, function(x) { return x.speed; }); }
-function sortByVerticalRate()   { sortBy('vert_rate',      compareNumeric, function(x) { return x.vert_rate; }); }
+function sortBySpeed()    { sortBy('speed',   compareNumeric, function(x) { return x.gs; }); }
+function sortByVerticalRate()   { sortBy('vert_rate',      compareNumeric, function(x) { return x.baro_rate; }); }
 function sortByDistance() { sortBy('sitedist',compareNumeric, function(x) { return x.sitedist; }); }
 function sortByTrack()    { sortBy('track',   compareNumeric, function(x) { return x.track; }); }
 function sortByMsgs()     { sortBy('msgs',    compareNumeric, function(x) { return x.messages; }); }
