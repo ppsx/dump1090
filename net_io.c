@@ -1233,7 +1233,7 @@ char *generateAircraftJson(const char *url_path, int *len) {
         if (trackDataValid(&a->callsign_valid))
             p += snprintf(p, end-p, ",\"flight\":\"%s\"", jsonEscapeString(a->callsign));
         if (trackDataValid(&a->position_valid))
-            p += snprintf(p, end-p, ",\"lat\":%f,\"lon\":%f,\"nic\":%u,\"rc\":%u\"seen_pos\":%.1f", a->lat, a->lon, a->pos_nic, a->pos_rc, (now - a->position_valid.updated)/1000.0);
+            p += snprintf(p, end-p, ",\"lat\":%f,\"lon\":%f,\"nic\":%u,\"rc\":%u,\"seen_pos\":%.1f", a->lat, a->lon, a->pos_nic, a->pos_rc, (now - a->position_valid.updated)/1000.0);
         if (trackDataValid(&a->airground_valid) && a->airground_valid.source >= SOURCE_MODE_S_CHECKED && a->airground == AG_GROUND)
             p += snprintf(p, end-p, ",\"altitude\":\"ground\"");
         else {
