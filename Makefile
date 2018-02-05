@@ -1,5 +1,8 @@
 PROGNAME=dump1090
 
+DISTDIR = build
+DISTFILES = dump1090 view1090 COPYING LICENSE README.md README-json.md public_html
+
 RTLSDR ?= yes
 BLADERF ?= yes
 
@@ -35,6 +38,8 @@ ifeq ($(BLADERF), yes)
   LIBS_SDR += $(shell pkg-config --libs libbladeRF)
 endif
 
+.PHONY: dist
+
 all: dump1090 view1090
 
 %.o: %.c *.h
@@ -66,3 +71,8 @@ benchmarks: convert_benchmark
 
 convert_benchmark: convert_benchmark.o convert.o util.o
 	$(CC) $(CPPFLAGS) $(CFLAGS) -g -o $@ $^ -lm
+
+dist: all
+	mkdir -p $(DISTDIR)
+	for F in $(DISTFILES); do cp -r $$F $(DISTDIR)/; done
+
