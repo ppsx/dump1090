@@ -202,6 +202,8 @@ struct aircraft {
     unsigned      gva : 2;
     unsigned      sda : 2;
     sil_type_t    sil_type;       // SIL supplement from TSS or opstatus
+    unsigned      gva : 2;        // GVA from opstatus
+    unsigned      sda : 2;        // SDA from opstatus
 
     int           modeA_hit;   // did our squawk match a possible mode A reply in the last check period?
     int           modeC_hit;   // did our altitude match a possible mode C reply in the last check period?
@@ -238,6 +240,7 @@ struct aircraft {
     unsigned      fatsv_emitted_sil;              //      -"-         SIL
     sil_type_t    fatsv_emitted_sil_type;         //      -"-         SIL supplement
     unsigned      fatsv_emitted_nic_baro;         //      -"-         NICbaro
+    emergency_t   fatsv_emitted_emergency;        //      -"-         emergency/priority status
 
     uint64_t      fatsv_last_emitted;             // time (millis) aircraft was last FA emitted
     uint64_t      fatsv_last_force_emit;          // time (millis) we last emitted only-on-change data

@@ -1785,7 +1785,7 @@ __attribute__ ((format (printf,4,5))) static char *appendFATSV(char *p, char *en
     return p;
 }
 
-#define TSV_MAX_PACKET_SIZE 400
+#define TSV_MAX_PACKET_SIZE 600
 #define TSV_VERSION 2
 
 void writeFATSVHeader()
@@ -1796,8 +1796,8 @@ void writeFATSVHeader()
 
     char *end = p + TSV_MAX_PACKET_SIZE;
 
-    p = appendFATSV(p, end, "clock",       "%"   PRIu64, mstime() / 1000);
-    p = appendFATSV(p, end, "tsvVersion",  "%u", TSV_VERSION);
+    p = appendFATSV(p, end, "clock",        "%"   PRIu64, mstime() / 1000);
+    p = appendFATSV(p, end, "tsv_version",  "%u", TSV_VERSION);
     --p; // remove last tab
     p = safe_snprintf(p, end, "\n");
 
@@ -2021,37 +2021,13 @@ static const char *sil_type_enum_string(sil_type_t type)
     }
 }
 
-static void writeFATSVBanner()
-{
-    char *p = prepareWrite(&Modes.fatsv_out, TSV_MAX_PACKET_SIZE);
-    if (!p)
-        return;
-    char *end = p + TSV_MAX_PACKET_SIZE;
-
-    p = appendFATSV(p, end, "faup1090_format_version", "%s", "2");
-
-    --p; // remove last tab
-    p = safe_snprintf(p, end, "\n");
-
-    if (p <= end)
-        completeWrite(&Modes.fatsv_out, p);
-    else
-        fprintf(stderr, "fatsv: output too large (max %d, overran by %d)\n", TSV_MAX_PACKET_SIZE, (int) (p - end));
-}
-
 static void writeFATSV()
 {
     struct aircraft *a;
     static uint64_t next_update;
-    static int first_run = 1;
 
     if (!Modes.fatsv_out.service || !Modes.fatsv_out.service->connections) {
         return; // not enabled or no active connections
-    }
-
-    if (first_run) {
-        writeFATSVBanner();
-        first_run = 0;
     }
 
     uint64_t now = mstime();
@@ -2062,8 +2038,6 @@ static void writeFATSV()
     // scan once a second at most
     next_update = now + 1000;
 
-    // Pretend we are "processing a message" so the validity checks work as expected
-    _messageNow = now;
     for (a = Modes.aircrafts; a; a = a->next) {
         if (a->messages < 2)  // basic filter for bad decodes
             continue;
@@ -2072,6 +2046,9 @@ static void writeFATSV()
         if (a->seen < a->fatsv_last_emitted) {
             continue;
         }
+
+        // Pretend we are "processing a message" so the validity checks work as expected
+        _messageNow = a->seen;
 
         // some special cases:
         int altValid = trackDataValid(&a->altitude_baro_valid);
@@ -2113,7 +2090,8 @@ static void writeFATSV()
             (callsignValid && strcmp(a->callsign, a->fatsv_emitted_callsign) != 0) ||
             (airgroundValid && a->airground == AG_AIRBORNE && a->fatsv_emitted_airground == AG_GROUND) ||
             (airgroundValid && a->airground == AG_GROUND && a->fatsv_emitted_airground == AG_AIRBORNE) ||
-            (squawkValid && a->squawk != a->fatsv_emitted_squawk);
+            (squawkValid && a->squawk != a->fatsv_emitted_squawk) ||
+            (trackDataValid(&a->emergency_valid) && a->emergency != a->fatsv_emitted_emergency);
 
         uint64_t minAge;
         if (immediate) {
@@ -2155,7 +2133,7 @@ static void writeFATSV()
             p = appendFATSV(p, end, "addrtype", "%s", addrtype_enum_string(a->addrtype));
         }
         if (forceEmit || a->adsb_version != a->fatsv_emitted_adsb_version) {
-            p = appendFATSV(p, end, "adsbVer", "%d", a->adsb_version);
+            p = appendFATSV(p, end, "adsb_version", "%d", a->adsb_version);
         }
         if (forceEmit || a->category != a->fatsv_emitted_category) {
             p = appendFATSV(p, end, "category", "%02X", a->category);
@@ -2166,8 +2144,11 @@ static void writeFATSV()
         if (trackDataValid(&a->nac_v_valid) && (forceEmit || a->nac_v != a->fatsv_emitted_nac_v)) {
             p = appendFATSVMeta(p, end, "nac_v",       a, &a->nac_v_valid,         "%u",       a->nac_v);
         }
-        if (trackDataValid(&a->sil_valid) && (forceEmit || a->sil != a->fatsv_emitted_sil || a->sil_type != a->fatsv_emitted_sil_type)) {
-            p = appendFATSVMeta(p, end, "sil",         a, &a->sil_valid,           "{%u %s}",  a->sil, sil_type_enum_string(a->sil_type));
+        if (trackDataValid(&a->sil_valid) && (forceEmit || a->sil != a->fatsv_emitted_sil)) {
+            p = appendFATSVMeta(p, end, "sil",         a, &a->sil_valid,           "%u",       a->sil);
+        }
+        if (trackDataValid(&a->sil_valid) && (forceEmit || a->sil_type != a->fatsv_emitted_sil_type)) {
+            p = appendFATSVMeta(p, end, "sil_type",    a, &a->sil_valid,           "%s",       sil_type_enum_string(a->sil_type));
         }
         if (trackDataValid(&a->nic_baro_valid) && (forceEmit || a->nic_baro != a->fatsv_emitted_nic_baro)) {
             p = appendFATSVMeta(p, end, "nic_baro",    a, &a->nic_baro_valid,      "%u",       a->nic_baro);
@@ -2251,6 +2232,7 @@ static void writeFATSV()
         a->fatsv_emitted_sil = a->sil;
         a->fatsv_emitted_sil_type = a->sil_type;
         a->fatsv_emitted_nic_baro = a->nic_baro;
+        a->fatsv_emitted_emergency = a->emergency;
         a->fatsv_last_emitted = now;
         if (forceEmit) {
             a->fatsv_last_force_emit = now;
