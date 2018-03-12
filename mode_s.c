@@ -903,6 +903,26 @@ static void decodeESAirbornePosition(struct modesMessage *mm, int check_imf)
     unsigned char *me = mm->ME;
 
     // 6-7: surveillance status
+    switch (getbits(me, 6, 7)) {
+        case 0:
+            // no status
+            mm->alert_valid = mm->spi_valid = 1;
+            mm->alert = mm->spi = 0;
+            break;
+        case 1: // permanent alert
+        case 2: // temporary alert
+            mm->alert_valid = 1;
+            mm->alert = 1;
+            // states 1/2 override state 3, so we don't know SPI status here.
+            break;
+        case 3: // SPI
+            // we know there's no alert in this case
+            mm->alert_valid = mm->spi_valid = 1;
+            mm->alert = 0;
+            mm->spi = 1;
+            break;
+    }
+
     // 8: IMF or NIC supplement-B
 
     if (check_imf) {
@@ -2106,14 +2126,13 @@ void useModesMessage(struct modesMessage *mm) {
     // forward messages when we have seen two of them.
 
     if (Modes.net) {
-        if (Modes.net_verbatim || mm->msgtype == 32) {
+        if (Modes.net_verbatim || mm->msgtype == 32 || !a) {
             // Unconditionally send
             modesQueueOutput(mm, a);
         } else if (a->messages > 1) {
-            // If this is the second message, and we
-            // squelched the first message, then re-emit the
-            // first message now.
-            if (!Modes.net_verbatim && a && a->messages == 2) {
+            // Suppress the first message. When we receive a second message,
+            // emit the first two messages.
+            if (a->messages == 2) {
                 modesQueueOutput(&a->first_message, a);
             }
             modesQueueOutput(mm, a);
