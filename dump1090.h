@@ -79,6 +79,7 @@
     #include <sys/ioctl.h>
     #include <time.h>
     #include <limits.h>
+    #include <mongoc.h>
 #else
     #include "winstubs.h" //Put everything Windows specific in here
 #endif
@@ -271,6 +272,10 @@ typedef enum {
 #include "convert.h"
 #include "sdr.h"
 
+#ifdef ENABLE_MONGOC
+#  include "mongo_conn.h"
+#endif
+
 //======================== structure declarations =========================
 
 typedef enum {
@@ -369,6 +374,11 @@ struct {                             // Internal state
         char *content;
         int clen;
     } json_aircraft_history[HISTORY_SIZE];
+
+    // Mongo connection options
+    char * mongo_uri;               // Mongo URI connection string
+    char * mongo_database;          // Mongo DB name
+    char * mongo_collection;        // Mongo collection name
 
     // User details
     double fUserLat;                // Users receiver/antenna lat/lon needed for initial surface location

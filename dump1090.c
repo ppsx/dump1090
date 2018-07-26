@@ -270,6 +270,9 @@ void showHelp(void) {
 #ifdef ENABLE_BLADERF
            "ENABLE_BLADERF "
 #endif
+#ifdef ENABLE_MONGOC
+           "ENABLE_MONGOC "
+#endif
 #ifdef SC16Q11_TABLE_BITS
     // This is a little silly, but that's how the preprocessor works..
 #define _stringize(x) #x
@@ -431,6 +434,21 @@ void backgroundTasks(void) {
         writeJsonToFile("aircraft.json", generateAircraftJson);
         next_json = now + Modes.json_interval;
     }
+
+#ifdef ENABLE_MONGOC
+    if (Modes.mongo_uri) {
+        int len = 0;
+        int code = writeJsonToMongo(generateAircraftJson(NULL, &len));
+
+        if(len == 0) {
+            fprintf(stderr, "Tried to write empty JSON to Mongo\n");
+        }
+
+        if(code != 0) {
+            fprintf(stderr, "Error while writing JSON to Mongo\n");
+        }
+    }
+#endif
 
     if (now >= next_history) {
         int rewrite_receiver_json = (Modes.json_dir && Modes.json_aircraft_history[HISTORY_SIZE-1].content == NULL);
@@ -612,6 +630,14 @@ int main(int argc, char **argv) {
                 Modes.json_interval = 100;
         } else if (!strcmp(argv[j], "--json-location-accuracy") && more) {
             Modes.json_location_accuracy = atoi(argv[++j]);
+
+         // Mongo flags
+        } else if (!strcmp(argv[j], "--write-mongo-uri") && more) {
+            Modes.mongo_uri = strdup(argv[++j]);
+        } else if (!strcmp(argv[j], "--write-mongo-db") && more) {
+            Modes.mongo_database = strdup(argv[++j]);
+        } else if (!strcmp(argv[j], "--write-mongo-col") && more) {
+            Modes.mongo_collection = strdup(argv[++j]);
 #endif
         } else if (sdrHandleOption(argc, argv, &j)) {
             /* handled */
