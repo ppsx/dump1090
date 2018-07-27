@@ -5,6 +5,7 @@ DISTFILES = dump1090 view1090 dump1090.sh COPYING LICENSE README.md README-json.
 
 RTLSDR ?= yes
 BLADERF ?= yes
+MONGOC ?= yes
 
 CPPFLAGS += -DMODES_DUMP1090_VERSION=\"$(DUMP1090_VERSION)\" -DMODES_DUMP1090_VARIANT=\"dump1090-fa\"
 
@@ -36,6 +37,13 @@ ifeq ($(BLADERF), yes)
   CPPFLAGS += -DENABLE_BLADERF
   CFLAGS += $(shell pkg-config --cflags libbladeRF)
   LIBS_SDR += $(shell pkg-config --libs libbladeRF)
+endif
+
+ifeq ($(MONGOC), yes)
+  SDR_OBJ += mongo_conn.o
+  CPPFLAGS += -DENABLE_MONGOC
+  CFLAGS += $(shell pkg-config --cflags libmongoc-1.0)
+  LIBS_SDR += $(shell pkg-config --libs libmongoc-1.0)
 endif
 
 .PHONY: dist
